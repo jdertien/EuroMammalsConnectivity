@@ -75,7 +75,7 @@ predict_for_species <- function(fitted_model, species_name, prediction_grid) {
 # -----------
 # Set working directory (user should adjust this path)
 # setwd('path/to/your/project/directory')
-setwd('I:\\biocon\\Emmanuel_Oceguera\\projects\\2024_03_EruoMammalsConnectivity\\outcomes\\prediction_test_03072024')
+setwd('I:\\biocon\\Emmanuel_Oceguera\\projects\\2024_03_EruoMammalsConnectivity\\outcomes\\predictions_08032024')
 
 # Load and preprocess data
 # User should replace the path placeholders with actual paths to their data
