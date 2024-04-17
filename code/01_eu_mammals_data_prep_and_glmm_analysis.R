@@ -70,6 +70,16 @@ predict_for_species <- function(fitted_model, species_name, prediction_grid) {
   writeRaster(species_predictions, filename = file_path, overwrite = T)
   return(file_path)
 }
+# Assuming c is defined; if c varies by species, it should be set within the loop or pulled from a dictionary
+# Transform prediction using the follow formula:
+# R = 1000 - 999 x ((1-exp(-c x H))/(1-exp(-c))
+# R is resistance and H is the habitat suitability model results (SDM)
+transform_predictions <- function(prediction_raster, c) {
+  # Apply the transformation formula to the raster values
+  transformed_raster <- 1000-999 * 1 ((1 - exp(-c*prediction_raster)) / (1-exp(-c)))
+  return(transformed_raster)
+}
+
 
 # Main Script
 # -----------
@@ -278,6 +288,25 @@ for (species_name in names(species_models)) {
   fitted_model <- species_models[[species_name]]
   spp_predition_rastPaths[[species_name]] <- predict_for_species(fitted_model, species_name, prediction_grid_sub)
 }
+
+# spp prediction transformation (resistance maps)
+# Define the c value
+c <- 2
+# Apply the transformation to each prediction raster and save as TIF
+spp_predition_transformed <- lapply(names(spp_predition_rastPaths), function(species_name){
+  pred_rast_path <- spp_predition_rastPaths[[species_name]]
+  pred_rast<- terra::rast(pred_rast_path) # load the raster from its path
+  #Apply the function
+  transformed_rast <- transform_predictions(pred_rast, c)
+  # Construct file path for saving
+  file_path <- paste0(species_name, "_resistance_map.asc") # define the output path
+  # Save the results as asc
+  writeRaster(transformed_rast, filename = file_path, overwrite = T)
+  return(file_path)
+})
+
+# The ouput is needed to run the circuitescape analysis in Julia using R
+# Path to the script:
 
 
 
