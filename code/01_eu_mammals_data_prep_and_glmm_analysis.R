@@ -45,9 +45,9 @@ st_erase <- function(x, y) {
 fit_best_model_for_species <- function(df, species_name) {
   options(na.action = "na.fail")
   # Dinamically create the full model formula
-  formula <- as.formula(paste0(species_name, " ~ Dvlpd_ZMean + RdDen10k_Zmean + 
-                               Forest_ZMean + TRI10km_reSamp + I(TRI10km_reSamp^2) +  # nolint: line_length_linter.
-                               Maxtmp10k_resamp + Wland_ZMean + Shrub10k_resamp + (1|biogeo)")) # nolint: line_length_linter.
+  formula <- as.formula(paste0(species_name, " ~ dvlp10k + RdDensity10k + 
+                               forest10k + FullTRI10k + I(FullTRI10k^2) + 
+                               TempMax10k + wland10k + shrub10k + (1|biogeo10k)")) # nolint: line_length_linter.
   # Fit the full model
   full_model <- glmer(formula, data = df, family = binomial, control = glmerControl(optimizer = "bobyqa")) # nolint: line_length_linter.
   # Model selection table of models with combinations
@@ -92,7 +92,7 @@ setwd('I:\\biocon\\Emmanuel_Oceguera\\projects\\2024_03_EruoMammalsConnectivity\
 # studyarea <- st_read("path/to/NC_Countries_reproj.shp")
 # spgrid <- vect("path/to/sp_occu_20190829.shp")
 studyarea = st_read("I:\\biocon\\Jeremy_Dertien\\NaturaConnect_Analysis\\Polygons\\NC_Countries_reproj.shp")
-spgrid = vect("I:\\biocon\\Emmanuel_Oceguera\\projects\\2024_01_Mammals_species_distribution_DarwingCore\\data\\occurrances_data\\sp_occu_20190829.shp")
+spgrid = vect("I:\\biocon\\Emmanuel_Oceguera\\projects\\Mammals_species_distribution_DarwingCore\\data\\occurrances_data\\sp_occu_20190829.shp")
 
 # Extract genus part from column names
 genus_names <- names(spgrid)[4:20] %>% 
@@ -213,15 +213,14 @@ for (name in names(eu_mammals_pres_pts_lst)){
 ## glmmm and predictions
 # covariants <- rast("path/to/covariants.grd")
 # biogeo <- rast("path/to/biogeographic.tif")
-covariants = rast("I:\\biocon\\Jeremy_Dertien\\NaturaConnect_Analysis\\Covariates\\LULC_ZMeans\\Kilo1\\UngCovsRastStack2.grd")
-biogeo = rast("I:\\biocon\\Jeremy_Dertien\\NaturaConnect_Analysis\\Covariates\\LULC_ZMeans\\Kilo1\\Biogeographic2016.tif")
+#covariants = rast("I:\\biocon\\Jeremy_Dertien\\NaturaConnect_Analysis\\Covariates\\LULC_ZMeans\\Kilo1\\UngCovsRastStack2.grd")
+#biogeo = rast("I:\\biocon\\Jeremy_Dertien\\NaturaConnect_Analysis\\Covariates\\LULC_ZMeans\\Kilo1\\Biogeographic2016.tif")
 
 # Resample Biogeo
-biogeo <- resample(biogeo, covariants, method = "bilinear")
+#biogeo <- resample(biogeo, covariants, method = "bilinear")
 
 # Add Biogeo to the covariants and rename it
-mammals_covariants <- c(covariants, biogeo) %>%
-  rename(biogeo = short_name)
+mammals_covariants <- mammals_covariants <- rast("I:\\biocon\\Jeremy_Dertien\\NaturaConnect_Analysis\\Covariates\\FinalRasts\\RastStack10k.grd")
 # Extracting covariants values for all at each point
 eu_mammals_covs_values <- lapply(eu_mammals_pres_avail_pts, function(sf_object){
   # Convert sf object to SpatVector for compatibility with terra::extract()
@@ -268,11 +267,11 @@ names(species_models) <- species_names
 ## Predictions with covariants 
 # Before ruinning, we have to alight the rasters covariants to the covariants we used in the model
 # Create a raste stack
-mammals_covariants_pred_grid <- mammals_covariants 
+mammals_covariants_pred_grid <- rast("I:\\biocon\\Jeremy_Dertien\\NaturaConnect_Analysis\\Covariates\\FinalRasts\\RastStack1k.grd") 
 
 # Set the names of covariantes
-model_covariants <- c("Dvlpd_ZMean", "Forest_ZMean", "Maxtmp10k_resamp", "RdDen10k_Zmean", "Shrub10k_resamp",
-                      "TRI10km_reSamp", "Wland_ZMean", "biogeo")
+model_covariants <- c("ag10k", "dvlp10k", "forest10k", "shrub10k",
+                      "wland10k", "RdDensity10k", "FullTRI10k", "TempMax10k", "BioGeo10k")
 # subset only the covariantes we've used in the model
 prediction_grid_sub <- terra::subset(mammals_covariants_pred_grid, model_covariants)
 
