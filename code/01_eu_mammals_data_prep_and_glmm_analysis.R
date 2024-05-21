@@ -292,6 +292,8 @@ for (species_name in names(species_models)) {
 # spp prediction transformation (resistance maps)
 # Define the c value
 c <- 2
+burnin = rast("I:\\biocon\\Jeremy_Dertien\\NaturaConnect_Analysis\\Covariates\\Barriers\\FullEuroBarrierBuf500_Clip.tif")
+burnin = resample(burnin, mammals_covariants_pred_grid[[6]], method = "bilinear")
 # Apply the transformation to each prediction raster and save as TIF
 spp_predition_transformed <- lapply(names(spp_predition_rastPaths), function(species_name){
   pred_rast_path <- spp_predition_rastPaths[[species_name]]
@@ -308,5 +310,59 @@ spp_predition_transformed <- lapply(names(spp_predition_rastPaths), function(spe
 # The ouput is needed to run the circuitescape analysis in Julia using R
 # Path to the script:
 
+###############
+##K-fold cross-validation for checking GLMM model performance for each species
 
+# Define the number of folds
+k <- 5
+
+# Initialize a list to store AUC results for each dataset
+auc_results <- list()
+
+# Loop over each dataset
+for (j in seq_along(eu_mammals_covs_values)) {
+  df <- eu_mammals_covs_values[[j]]
+  response_var <- species_names[j]
+  
+  # Create k-fold cross-validation indices
+  set.seed(45) # for reproducibility
+  folds <- createFolds(df[[response_var]], k = k, list = TRUE, returnTrain = TRUE)
+  
+  # Initialize a vector to store the AUC for each fold
+  auc_values <- numeric(k)
+  
+  # Perform k-fold cross-validation
+  for (i in 1:k) {
+    # Split the data into training and testing sets
+    train_indices <- folds[[i]]
+    train_data <- df[train_indices, ]
+    test_data <- df[-train_indices, ]
+    
+    # Fit the model on the training set
+    model <- fit_best_model_for_species(train_data, response_var)
+    
+    # Predict probabilities on the testing set
+    predictions <- predict(model, newdata = test_data, type = "response", allow.new.levels = TRUE)
+    
+    # Calculate the AUC
+    roc_obj <- roc(test_data[[response_var]], predictions$best_model)
+    auc_values[i] <- auc(roc_obj)
+  }
+  
+  # Store the AUC results for the current dataset
+  auc_results[[j]] <- list(
+    auc_values = auc_values,
+    mean_auc = mean(auc_values),
+    sd_auc = sd(auc_values)
+  )
+}
+
+# Output the cross-validation results for each dataset
+for (j in seq_along(auc_results)) {
+  cat("Dataset", j, "\n")
+  cat("Cross-Validation AUCs:", auc_results[[j]]$auc_values, "\n")
+  cat("Mean AUC:", auc_results[[j]]$mean_auc, "\n")
+  cat("Standard Deviation of AUC:", auc_results[[j]]$sd_auc, "\n")
+  cat("\n")
+}
 
